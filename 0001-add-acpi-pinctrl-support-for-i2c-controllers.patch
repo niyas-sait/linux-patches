@@ -1,0 +1,147 @@
+From fda4ed47899ffdd41e689f27ce06cffa10999443 Mon Sep 17 00:00:00 2001
+From: Niyas Sait <niyas.sait@linaro.org>
+Date: Tue, 1 Nov 2022 22:12:05 +0000
+Subject: [PATCH] add acpi pinctrl support for i2c controllers
+
+---
+ .../Imx8mp/Drivers/AcpiTables/Dsdt-Gpio.asl   | 41 +++++++++++++++++++
+ .../Imx8mp/Drivers/AcpiTables/Dsdt-I2c.asl    | 37 +++++++++++++++--
+ 2 files changed, 74 insertions(+), 4 deletions(-)
+
+diff --git a/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-Gpio.asl b/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-Gpio.asl
+index 53cf8fe9..ad20cdb0 100644
+--- a/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-Gpio.asl
++++ b/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-Gpio.asl
+@@ -35,4 +35,45 @@ Device (GPIO)
+         })
+         Return(RBUF)
+     }
++}
++
++Device (PINC)
++{
++    Name (_HID, "NXP0199")
++    Name (_UID, 0x0)
++    Method (_STA)
++    {
++        Return(0xf)
++    }
++    Method (_CRS, 0x0, NotSerialized) {
++        Name (RBUF, ResourceTemplate () {
++            MEMORY32FIXED(ReadWrite, 0x30330000, 0x10000, )  // IOMUXC
++            PinGroup ("i2c1_gpio5", ResourceProducer, ,)
++                {   // Pin list
++                    128,
++                    129
++                }
++            PinGroup ("i2c2_gpio5", ResourceProducer, ,)
++                {   // Pin list
++                    130,
++                    131
++                }
++            PinGroup ("i2c3_gpio5", ResourceProducer, ,)
++                {   // Pin list
++                    132,
++                    133
++                }
++            PinGroup ("i2c4_gpio5", ResourceProducer, ,)
++                {   // Pin list
++                    134,
++                    135
++                }
++            PinGroup ("gpiokeygrp", ResourceProducer, ,)
++                {   // Pin list
++                    100,
++                    106
++                }
++        })
++        Return(RBUF)
++    }
+ }
+\ No newline at end of file
+diff --git a/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-I2c.asl b/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-I2c.asl
+index c523a25e..fd794b4b 100644
+--- a/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-I2c.asl
++++ b/Platform/Imx8mp/Drivers/AcpiTables/Dsdt-I2c.asl
+@@ -41,14 +41,22 @@ Device (I2C1)
+ 
+   Method (_STA)
+   {
+-    Return(0x0)
++    Return(0xf)
+   }
+ 
+   Method (_CRS, 0x0, NotSerialized)
+   {
+     Name ( RBUF, ResourceTemplate () {
+       MEMORY32FIXED(ReadWrite, 0x30A20000, 0x14, )
+-      Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 67 }
++      Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 67 } 
++      PinGroupFunction(Exclusive, 0x1, "\\_SB.PINC", 0, "i2c1_gpio5", ResourceConsumer,)
++      // Pull Up
++      PinGroupConfig(Exclusive, 0x01, 10000, "\\_SB.PINC", 0, "i2c1_gpio5", ResourceConsumer, )
++      // Drive Strength
++      PinGroupConfig(Exclusive, 0x0A, 4, "\\_SB.PINC", 0, "i2c1_gpio5", ResourceConsumer, )
++      // Schmitt trigger
++      PinGroupConfig(Exclusive, 0x0D, 1, "\\_SB.PINC", 0, "i2c1_gpio5", ResourceConsumer, )
++
+     })
+     Return(RBUF)
+   }
+@@ -72,6 +80,14 @@ Device (I2C2)
+     Name (RBUF, ResourceTemplate () {
+       MEMORY32FIXED(ReadWrite, 0x30A30000, 0x14, )
+       Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 68 }
++      PinGroupFunction(Exclusive, 0x1, "\\_SB.PINC", 0, "i2c2_gpio5", ResourceConsumer,)
++      // Pull Up
++      PinGroupConfig(Exclusive, 0x01, 10000, "\\_SB.PINC", 0, "i2c2_gpio5", ResourceConsumer, )
++      // Drive Strength
++      PinGroupConfig(Exclusive, 0x0A, 4, "\\_SB.PINC", 0, "i2c2_gpio5", ResourceConsumer, )
++      // Schmitt trigger
++      PinGroupConfig(Exclusive, 0x0D, 1, "\\_SB.PINC", 0, "i2c2_gpio5", ResourceConsumer, )
++
+     })
+     Return(RBUF)
+   }
+@@ -95,6 +111,13 @@ Device (I2C3)
+     Name (RBUF, ResourceTemplate () {
+       MEMORY32FIXED(ReadWrite, 0x30A40000, 0x14, )
+       Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 69 }
++      PinGroupFunction(Exclusive, 0x1, "\\_SB.PINC", 0, "i2c3_gpio5", ResourceConsumer,)
++      // Pull Up
++      PinGroupConfig(Exclusive, 0x01, 10000, "\\_SB.PINC", 0, "i2c3_gpio5", ResourceConsumer, )
++      // Drive Strength
++      PinGroupConfig(Exclusive, 0x0A, 4, "\\_SB.PINC", 0, "i2c3_gpio5", ResourceConsumer, )
++      // Schmitt trigger
++      PinGroupConfig(Exclusive, 0x0D, 1, "\\_SB.PINC", 0, "i2c3_gpio5", ResourceConsumer, )
+     })
+     Return(RBUF)
+   }
+@@ -109,7 +132,7 @@ Device (I2C5)
+ 
+   Method (_STA)
+   {
+-    Return(0x0)
++    Return(0xf)
+   }
+ 
+   Method (_CRS, 0x0, NotSerialized)
+@@ -117,8 +140,14 @@ Device (I2C5)
+     Name (RBUF, ResourceTemplate () {
+       MEMORY32FIXED(ReadWrite, 0x30AD0000, 0x14, )
+       Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 108 }
++      PinGroupFunction(Exclusive, 0x1, "\\_SB.PINC", 0, "i2c4_gpio5", ResourceConsumer,)
++      // Pull Up
++      PinGroupConfig(Exclusive, 0x01, 10000, "\\_SB.PINC", 0, "i2c4_gpio5", ResourceConsumer, )
++      // Drive Strength
++      PinGroupConfig(Exclusive, 0x0A, 4, "\\_SB.PINC", 0, "i2c4_gpio5", ResourceConsumer, )
++      // Schmitt trigger
++      PinGroupConfig(Exclusive, 0x0D, 1, "\\_SB.PINC", 0, "i2c4_gpio5", ResourceConsumer, )
+     })
+     Return(RBUF)
+   }
+ }
+-
+-- 
+2.25.1
+
